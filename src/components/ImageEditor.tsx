@@ -1,23 +1,28 @@
-import {
-  AreaSelector,
-  IArea,
-  IAreaRendererProps,
-} from "@bmunozg/react-image-area";
-import { PropsWithChildren, useEffect, useRef } from "react";
+import { AreaSelector, IArea } from "@bmunozg/react-image-area";
+import { PropsWithChildren, useEffect } from "react";
 import { useEditor } from "../context/EditorContext";
-import {
-  getAreaPayload,
-  ImageMetadataManager,
-} from "../utils/editor.utils";
+import CustomSelectArea from "./CustomSelectArea";
+import { ImageMetadataManager } from "../utils/ImageManager";
+import { parseExifMetadata } from "../utils/editor.utils";
 
-interface ImageEditorProps extends PropsWithChildren {}
 const imageManager = ImageMetadataManager.getInstance();
-const ImageEditor = ({ children }: ImageEditorProps) => {
-  const { areas, setAreas } = useEditor();
-  const { image: imageData, setImage: setImageData } = useEditor();
-  const canvasRef = useRef(null);
+
+const ImageEditor = ({ children }: PropsWithChildren) => {
+  const { areas, setAreas, canvasRef } = useEditor();
+  const {
+    image: imageData,
+    metadata,
+    setMetadata,
+    setSelectedArea,
+  } = useEditor();
   const onChangeHandler = (areas: IArea[]) => {
-    setAreas(areas);
+    setSelectedArea(undefined);
+
+    setAreas(
+      areas.map((a, index) => {
+        return { ...a, areaNumber: index };
+      })
+    );
   };
 
   useEffect(() => {
@@ -27,64 +32,42 @@ const ImageEditor = ({ children }: ImageEditorProps) => {
     image.src = imageData as string;
     image.onload = () => {
       // Set canvas size to match the image size
-      // Draw the image on the  canvas
       canvas.width = image.width;
       canvas.style.height = "80vh";
       canvas.style.maxWidth = "60vw";
       canvas.style.maxHeight = "60vw";
       canvas.height = canvas.offsetHeight;
       canvas.width = (canvas.offsetHeight * image.width) / image.height;
-      // canvas.width =
-      //   image.width < windowWidth
-      //     ? image.width
-      //     : (windowWidth * image.height) / image.width;
-      // canvas.height =
-      //   image.height < windowHeight
-      //     ? image.height
-      //     : (windowHeight * image.height) / image.width;
       if (ctx) {
+        // Draw the image on the  canvas
         ctx?.drawImage(image, 0, 0, canvas.width, canvas.height);
         // Update state to indicate that the image is loaded
         imageManager.initImageData(canvas, imageData as string);
-        const metadata = imageManager.getImageMetadata().Exif;
-        console.log("metadata", metadata);
+
+        const exifMetadata = imageManager.getImageMetadata();
         const metadataAreas: IArea[] = [];
-        Object.keys(metadata).forEach((key, keyIndex) => {
-          try {
-            const obj = JSON.parse(metadata[key]);
-            if (typeof obj === "object") {
-              metadataAreas.push(obj.area);
-              const image = new Image();
-              image.src = obj.payload;
-              ctx?.drawImage(
-                image,
-                obj.area.x - 1,
-                obj.area.y - 1,
-                obj.area.width + 2,
-                obj.area.height + 1
-              );
-            }
-          } catch (error) {}
+        console.log("Exif metadata", exifMetadata);
+        const metadata = parseExifMetadata(exifMetadata.Exif);
+        setMetadata(metadata);
+        metadata.forEach((obj) => {
+          metadataAreas.push(obj.area);
+          const image = new Image();
+          image.src = obj.payload;
+          ctx?.drawImage(
+            image,
+            obj.area.x - 1,
+            obj.area.y - 1,
+            obj.area.width + 2,
+            obj.area.height + 1
+          );
         });
+        // setMetadata((prev) => [...prev, obj]);
+
         setAreas(metadataAreas);
       }
     };
   }, [imageData]);
-  const customRender = (areaProps: IAreaRendererProps) => {
-    return (
-      <div
-        key={areaProps.areaNumber}
-        onClick={() => {
-          console.log(areaProps.areaNumber, areaProps.width);
-        }}
-        style={{
-          width: "100%",
-          height: "100%",
-          background: "black",
-        }}
-      />
-    );
-  };
+
   return (
     <div>
       <AreaSelector
@@ -92,7 +75,7 @@ const ImageEditor = ({ children }: ImageEditorProps) => {
         onChange={onChangeHandler}
         minWidth={20}
         minHeight={20}
-        customAreaRenderer={customRender}
+        customAreaRenderer={CustomSelectArea}
       >
         <canvas
           style={{
@@ -103,27 +86,6 @@ const ImageEditor = ({ children }: ImageEditorProps) => {
           ref={canvasRef}
         />
       </AreaSelector>
-      <button
-        onClick={() => {
-          const canvas = canvasRef.current as unknown as HTMLCanvasElement;
-          const ctx = canvas?.getContext("2d");
-          if (ctx)
-            areas.forEach((area, index) => {
-              if (area.width > 0 && area.height > 0) {
-                const payload = getAreaPayload(area, ctx);
-                imageManager.insertImageMetadata(
-                  index,
-                  area,
-                  payload,
-                  areas.length
-                );
-              }
-            });
-            imageManager.commitImageMetadata()
-        }}
-      >
-        Save
-      </button>
     </div>
   );
 };

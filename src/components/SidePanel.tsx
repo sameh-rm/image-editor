@@ -1,24 +1,109 @@
 import React from "react";
 import { useEditor } from "../context/EditorContext";
+import { getAreaPayload } from "../utils/editor.utils";
+import { toast } from "react-toastify";
+import { ImageMetadataManager } from "../utils/ImageManager";
 
+const imageManager = ImageMetadataManager.getInstance();
 const SidePanel = () => {
-  const { image } = useEditor();
+  const {
+    canvasRef,
+    setMetadata,
+    metadata,
+    selectedArea,
+    setSelectedArea,
+    setAreas,
+  } = useEditor();
+
+  const addMetadataObject = (metadataObject: MetadataObjectType) => {
+    const newMetadata = metadata.filter((mObj) => {
+      return mObj.areaNumber !== metadataObject.areaNumber;
+    });
+    newMetadata.push(metadataObject);
+    setMetadata((prev) => newMetadata);
+  };
+
+  const removeMetadataObject = (metadataObject: MetadataObjectType) => {
+    const nextMetadata = metadata.filter(
+      (m) => m.areaNumber !== metadataObject.areaNumber
+    );
+    setMetadata(nextMetadata);
+    setAreas((areas) =>
+      areas.filter((area) => metadataObject.areaNumber === area.areaNumber)
+    );
+  };
+
+  const showSelectedArea = (obj: MetadataObjectType) => {
+    const canvas = canvasRef.current as unknown as HTMLCanvasElement;
+    const ctx = canvas?.getContext("2d");
+    if (ctx && obj) {
+      const chunkImage = new Image();
+      chunkImage.src = obj.payload;
+      chunkImage.onload = () => {
+        ctx?.drawImage(
+          chunkImage,
+          obj.area.x - 1,
+          obj.area.y - 1,
+          obj.area.width + 2,
+          obj.area.height + 1
+        );
+      };
+      setSelectedArea(undefined);
+    }
+  };
+
   const handleShowSelectedArea = () => {
-    // Implement logic to show selected area
+    const obj = metadata.find((mObj: MetadataObjectType) => {
+      return selectedArea?.areaNumber === mObj.areaNumber;
+    });
+    console.log("handleShowSelectedArea", obj);
+    if (obj) {
+      showSelectedArea(obj);
+      removeMetadataObject(obj);
+    }
+  };
+
+  const HideArea = () => {
+    if (!selectedArea) {
+      toast("There are no selected area!", {
+        type: "error",
+      });
+      return;
+    }
+    const canvas = canvasRef.current as unknown as HTMLCanvasElement;
+    const ctx = canvas?.getContext("2d");
+    if (ctx) {
+      const payload = getAreaPayload(selectedArea!, ctx);
+      addMetadataObject({
+        area: selectedArea,
+        areaNumber: selectedArea.areaNumber || 1,
+        payload,
+      });
+    }
   };
 
   const handleHideSelectedArea = () => {
-    // Implement logic to hide selected area
+    HideArea();
   };
 
   const handleShowAll = () => {
-    // Implement logic to show all
+    metadata.forEach((obj) => {
+      showSelectedArea(obj);
+    });
+    setAreas([]);
+    setMetadata([]);
   };
 
   const handleDownload = () => {
-    // Implement logic to download
     // handleFileSelect(image as string);
+
+    if (!imageManager.commitImageMetadata(metadata))
+      toast("Hidden data is too large for exif metadata");
+    else {
+      toast("Save Successfully");
+    }
   };
+
   return (
     <div className="w-1/4 p-4 bg-white shadow-md rounded-md flex-col">
       <button

@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import ImageUploadInput from "./components/ImageUploadInput";
-import ImageEditor from "./components/ImageEditor";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import SidePanel from "./components/SidePanel";
 import { EditorProvider } from "./context/EditorContext";
-import './App.css'
+import "./App.css";
 const App: React.FC = () => {
   return (
     <>
@@ -13,6 +14,7 @@ const App: React.FC = () => {
             <SidePanel />
             <ImageUploadInput />
           </EditorProvider>
+          <ToastContainer />
         </main>
       </div>
     </>
