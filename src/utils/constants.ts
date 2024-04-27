@@ -1,0 +1,1 @@
+export const STARTING_HEX=0xa001

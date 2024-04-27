@@ -1,26 +1,22 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
-
-function App() {
+import React, { useState } from "react";
+import ImageUploadInput from "./components/ImageUploadInput";
+import ImageEditor from "./components/ImageEditor";
+import SidePanel from "./components/SidePanel";
+import { EditorProvider } from "./context/EditorContext";
+import './App.css'
+const App: React.FC = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <div className="bg-gray-100 h-screen w-screen sm:px-8 md:px-16 sm:py-8">
+        <main className="flex gap-4 h-full">
+          <EditorProvider>
+            <SidePanel />
+            <ImageUploadInput />
+          </EditorProvider>
+        </main>
+      </div>
+    </>
   );
-}
+};
 
 export default App;
