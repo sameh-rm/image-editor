@@ -20,11 +20,13 @@ const SidePanel = () => {
       return mObj.uniqueId === metadataObject.uniqueId;
     });
 
-    if(isExisted) {
-      toast("You cant hide a hidden area, create a new selected Area",{type:"error"})
-      return
+    if (isExisted) {
+      toast('You cant hide a hidden area, create a new selected Area', {
+        type: 'error'
+      });
+      return;
     }
-    setMetadata(prev=> [...prev, metadataObject]);
+    setMetadata((prev) => [...prev, metadataObject]);
   };
 
   const removeMetadataObject = (metadataObject: MetadataObjectType) => {
