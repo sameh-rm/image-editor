@@ -1,11 +1,9 @@
-import React, { useRef } from "react";
-import ImageEditor from "./ImageEditor";
-import { useEditor } from "../context/EditorContext";
+import React, { useRef } from 'react';
+import ImageEditor from './ImageEditor';
+import { useEditor } from '../context/EditorContext';
 // open image
 const ImageUploadInput: React.FC = () => {
-  const { image, setImage } = useEditor();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const { image, setImage, fileInputRef } = useEditor();
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
@@ -21,10 +19,11 @@ const ImageUploadInput: React.FC = () => {
   };
 
   const handleOpenFileDialog = () => {
-    if (!image)
+    if (!image) {
       if (fileInputRef.current) {
         fileInputRef.current.click();
       }
+    }
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {

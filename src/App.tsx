@@ -1,10 +1,10 @@
-import React from "react";
-import ImageUploadInput from "./components/ImageUploadInput";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import SidePanel from "./components/SidePanel";
-import { EditorProvider } from "./context/EditorContext";
-import "./App.css";
+import React from 'react';
+import ImageUploadInput from './components/ImageUploadInput';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import SidePanel from './components/SidePanel';
+import { EditorProvider } from './context/EditorContext';
+import './App.css';
 const App: React.FC = () => {
   return (
     <>

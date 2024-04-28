@@ -1,19 +1,18 @@
-import { IArea } from "@bmunozg/react-image-area";
-import { STARTING_HEX } from "./constants";
-import { downloadImage } from "./editor.utils";
-import piexif from "./piexif.js";
-import { Buffer } from "buffer";
+import { IArea } from '@bmunozg/react-image-area';
+import {
+  bufferToBase64Src,
+  downloadImage,
+  hexToBytes,
+  imageDataToDataURL,
+  jsonFromHex,
+  stringToHex
+} from './editor.utils';
 export class ImageMetadataManager {
   private static instance: ImageMetadataManager | undefined;
   private imageData: string | undefined;
-  private exifObj: ExifObjectType;
-  private metadata: MetadataType;
   private canvas: HTMLCanvasElement | undefined;
 
-  private constructor() {
-    this.metadata = {};
-    this.exifObj = { Exif: {} };
-  }
+  private constructor() {}
 
   static getInstance() {
     if (!this.instance) {
@@ -29,12 +28,32 @@ export class ImageMetadataManager {
   }
 
   initExifObject() {
-    this.exifObj = this.getImageMetadata();
     return ImageMetadataManager.getInstance();
   }
 
+  /**
+   * Retrieves the payload data from the specified area on the canvas.
+   * @param {IArea} area - The area from which to extract the payload data.
+   * @returns {string} The payload data as a data URL.
+   */
+  getAreaPayload(area: IArea) {
+    const mainImageCtx = this.canvas?.getContext('2d');
+    const imageData = mainImageCtx.getImageData(
+      area.x,
+      area.y,
+      area.width - 1,
+      area.height - 1
+    );
+
+    return imageDataToDataURL(imageData);
+  }
+
+  /**
+   * Hides image pixels within a specified area on the canvas by setting RGB values to zero.
+   * @param {IArea} area - The area on the canvas where pixels will be hidden.
+   */
   hideImagePixel(area: IArea) {
-    const ctx = this.canvas?.getContext("2d");
+    const ctx = this.canvas?.getContext('2d');
     if (ctx) {
       const imageData = ctx.getImageData(
         area.x,
@@ -49,6 +68,7 @@ export class ImageMetadataManager {
         imageData.height
       );
 
+      // modify Area pixel colors with the value of 0
       for (let i = 0; i < newData.data.length; i += 4) {
         newData.data[i] = 0; // Red
         newData.data[i + 1] = 0; // Green
@@ -60,85 +80,86 @@ export class ImageMetadataManager {
     }
   }
 
-  getImageMetadata(data?: string): ExifObjectType {
-    if (!this.imageData) {
-      console.error("Please init ImageData First!");
-      return { Exif: {} };
+  /**
+   * Saves the Hidden areas data to the image.
+   * @param {string} imageDataUrl - The data URL of the image.
+   * @param {string} data - the Hidden areas data to be saved.
+   * @returns {string} The data URL of the modified image.
+   */
+  async saveDataToImage(imageDataUrl, data) {
+    const imageBuffer = await (await fetch(imageDataUrl)).arrayBuffer();
+
+    const bytes = new Uint8Array(imageBuffer);
+    const hex = [];
+    // iterates over each byte in bytes array making sure the byte is positive if not adding 256
+    // to make sure byte within range 0 to 255 before converting it to hexadecimal
+    // split each byte into two parts each part is 4bits to fit as hexadecimal digit
+    for (let i = 0; i < bytes.length; i++) {
+      const current = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
+      hex.push((current >>> 4).toString(16));
+      hex.push((current & 0xf).toString(16));
     }
 
-    const buffer = Buffer.from(data || this.imageData);
-    let exif: ExifObjectType = {
-      Exif: {},
-    };
-    try {
-      exif = piexif.load(buffer.toString("binary"));
-    } catch (error) {
-      console.log("exif Error", error);
+    const hexStr = hex.join('') + stringToHex(data);
+
+    const buffer = new Uint8Array(hexToBytes(hexStr));
+    const url = bufferToBase64Src(buffer);
+    downloadImage(url);
+    return url;
+  }
+
+  /**
+   * Extracts metadata from the image data URL by converting it to hexadecimal and parsing JSON data.
+   * @returns {Array} The extracted metadata as an array.
+   */
+  getMetadata() {
+    // Extract the base64 part of the data URL
+    const base64Index = this.imageData.indexOf('base64,');
+    if (base64Index === -1) {
+      console.error('Invalid data URL format');
+      return null;
     }
-    return exif;
+    const base64Data = this.imageData.substring(base64Index + 'base64,'.length);
+
+    // Decode the base64 data to a binary string
+    const binaryString = atob(base64Data);
+
+    // Convert the binary string to a hexadecimal string
+    let hexStr = '';
+    for (let i = 0; i < binaryString.length; i++) {
+      const hex = binaryString.charCodeAt(i).toString(16);
+      hexStr += (hex.length === 1 ? '0' : '') + hex;
+    }
+
+    // get the last index of ffd9, split the hexStr
+    // to get the payload from the last part of the hex
+    return jsonFromHex(hexStr.substring(hexStr.lastIndexOf('ffd9') + 4)) || [];
   }
 
-  insertImageMetadata(
-    areaNumber: number, //areaNumber
-    area: IArea,
-    payload: string
-  ) {
-    const id = (STARTING_HEX + areaNumber).toString();
-    piexif.ExifIFD[id] = STARTING_HEX + areaNumber;
-    piexif.TAGS.Exif[id] = {
-      name: "HiddenData",
-      type: "Undefined",
-    };
-    this.metadata[id] = JSON.stringify({
-      areaNumber,
-      area,
-      payload: payload,
-    });
-  }
-
+  /**
+   * Commits image metadata by hiding pixels based on the metadata area and saving the modified image.
+   * @param {MetadataObjectType[]} metadata - An array of metadata objects to be applied to the image.
+   * @returns {boolean} Returns true if the operation is successful, false if an error occurs, or undefined if imageData is not initialized.
+   */
   commitImageMetadata(metadata: MetadataObjectType[]) {
-    console.log("metadata", metadata);
-    metadata.forEach((mObj) => {
-      this.insertImageMetadata(mObj.areaNumber, mObj.area, mObj.payload);
-    });
-
     if (!this.imageData) {
-      console.error("Please init ImageData First!");
+      console.error('Please init ImageData First!');
       return undefined;
     }
+    metadata.forEach((mObj) => {
+      this.hideImagePixel(mObj.area);
+    });
 
-    console.log("this.metadata ", this.metadata);
-
-    this.exifObj = {
-      ...this.exifObj,
-      Exif: { ...this.exifObj?.Exif, ...this.metadata },
-    };
-
-    const exifStr = piexif.dump(this.exifObj);
-
-    if (exifStr.length + 2 <= 0xffff) {
-      metadata.forEach((mObj) => {
-        console.log("mObj", mObj);
-        this.hideImagePixel(mObj.area);
-      });
-    } else {
-      console.error("Too large");
-    }
-    const data = this.canvas?.toDataURL("image/jpeg");
-
-    console.log("exifObj", this.exifObj);
-
+    const data = this.canvas?.toDataURL('image/jpeg');
     try {
-      const inserted = piexif.insert(exifStr, data);
-      // const newBase64 = btoa(inserted);
-      // const imageDataUrl = `data:image/jpeg;base64,${newBase64}`;
-
-      downloadImage(inserted);
+      this.saveDataToImage(data, JSON.stringify(metadata)).then((data) => {
+        downloadImage(data);
+      });
 
       return true;
     } catch (error) {
-      console.log("error", error);
-      return false;
+      console.log('error', error);
     }
+    return false;
   }
 }

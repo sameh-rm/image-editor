@@ -1,20 +1,17 @@
-import { IArea } from "@bmunozg/react-image-area";
 import React, {
   createContext,
   useContext,
   useState,
   ReactNode,
   useRef,
-  MutableRefObject,
-} from "react";
+  MutableRefObject
+} from 'react';
 
 // Define the shape of your context
-interface CustomArea extends IArea {
-  areaNumber?: number;
-}
+
 interface EditorContextType {
   image: string | null;
-  setImage: (image: string) => void;
+  setImage: React.Dispatch<React.SetStateAction<string>>;
   areas: CustomArea[];
   setAreas: React.Dispatch<React.SetStateAction<CustomArea[]>>;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
@@ -22,6 +19,7 @@ interface EditorContextType {
   setSelectedArea: React.Dispatch<React.SetStateAction<CustomArea | undefined>>;
   metadata: MetadataObjectType[];
   setMetadata: React.Dispatch<React.SetStateAction<MetadataObjectType[]>>;
+  fileInputRef: MutableRefObject<HTMLInputElement | null>;
 }
 
 // Create the context
@@ -34,7 +32,7 @@ const EditorProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [selectedArea, setSelectedArea] = useState<CustomArea>();
   const canvasRef = useRef(null);
   const [metadata, setMetadata] = useState<MetadataObjectType[]>([]);
-
+  const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <EditorContext.Provider
       value={{
@@ -47,6 +45,7 @@ const EditorProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         setSelectedArea,
         metadata,
         setMetadata,
+        fileInputRef
       }}
     >
       {children}
@@ -58,7 +57,7 @@ const EditorProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 const useEditor = (): EditorContextType => {
   const context = useContext(EditorContext);
   if (!context) {
-    throw new Error("useEditor must be used within a EditorProvider");
+    throw new Error('useEditor must be used within a EditorProvider');
   }
   return context;
 };
