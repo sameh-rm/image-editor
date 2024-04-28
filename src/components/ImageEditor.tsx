@@ -54,7 +54,7 @@ const ImageEditor = ({ children }: PropsWithChildren) => {
         const metadataAreas: IArea[] = [];
         const metadata = imageManager.getMetadata();
         setMetadata(metadata);
-        metadata.forEach((obj) => {
+        metadata.forEach(obj=> {
           metadataAreas.push(obj.area);
           const image = new Image();
           image.src = obj.payload;
@@ -65,7 +65,7 @@ const ImageEditor = ({ children }: PropsWithChildren) => {
             obj.area.width + 2,
             obj.area.height + 1
           );
-        });
+        })
 
         setAreas(metadataAreas);
         setIsLoading(false);

@@ -16,11 +16,15 @@ const SidePanel = () => {
   } = useEditor();
 
   const addMetadataObject = (metadataObject: MetadataObjectType) => {
-    const newMetadata = metadata.filter((mObj) => {
-      return mObj.uniqueId !== metadataObject.uniqueId;
+    const isExisted = metadata.find((mObj) => {
+      return mObj.uniqueId === metadataObject.uniqueId;
     });
-    newMetadata.push(metadataObject);
-    setMetadata(newMetadata);
+
+    if(isExisted) {
+      toast("You cant hide a hidden area, create a new selected Area",{type:"error"})
+      return
+    }
+    setMetadata(prev=> [...prev, metadataObject]);
   };
 
   const removeMetadataObject = (metadataObject: MetadataObjectType) => {
@@ -100,7 +104,7 @@ const SidePanel = () => {
 
   const handleDownload = () => {
     imageManager.commitImageMetadata(metadata);
-    setImage('');
+    setImage(undefined);
   };
 
   return (

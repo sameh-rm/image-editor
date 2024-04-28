@@ -48,6 +48,7 @@ export function jsonFromHex(hex) {
   } catch (error) {
     console.error('jsonFromHex', error);
   }
+  return []
 }
 export function stringFromHex(hex) {
   let str = '';
