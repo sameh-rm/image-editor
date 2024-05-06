@@ -1,12 +1,6 @@
+import { saveAs } from 'file-saver';
 export async function downloadImage(imageData: string) {
-  // Save the blob to a file
-  const a = document.createElement('a');
-  a.href = imageData;
-  a.download = 'image.jpg';
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(imageData);
-  document.body.removeChild(a);
+  saveAs(imageData, 'hidden_image.jpeg');
 }
 
 export function imageDataToDataURL(imageData: ImageData) {

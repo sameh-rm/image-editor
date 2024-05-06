@@ -1,5 +1,5 @@
 import { AreaSelector, IArea } from '@bmunozg/react-image-area';
-import { PropsWithChildren, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useEditor } from '../context/EditorContext';
 import CustomSelectArea from './CustomSelectArea';
 import { ImageMetadataManager } from '../utils/ImageManager';
@@ -7,7 +7,7 @@ import Spinner from './Spinner';
 
 const imageManager = ImageMetadataManager.getInstance();
 
-const ImageEditor = ({ children }: PropsWithChildren) => {
+const ImageEditor = () => {
   const {
     areas,
     setAreas,

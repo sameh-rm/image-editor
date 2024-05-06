@@ -60,7 +60,7 @@ const SidePanel = () => {
 
   const handleShowSelectedArea = () => {
     if (!selectedArea) {
-      toast('There are no selected area!', {
+      toast('Make sure to click on the selected area, before showing!', {
         type: 'error'
       });
       return;
@@ -78,7 +78,7 @@ const SidePanel = () => {
 
   const HideArea = () => {
     if (!selectedArea) {
-      toast('There are no selected area!', {
+      toast('Make sure to click on the selected area, before hiding!', {
         type: 'error'
       });
       return;

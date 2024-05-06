@@ -7,6 +7,8 @@ import {
   jsonFromHex,
   stringToHex
 } from './editor.utils';
+import { toast } from 'react-toastify';
+
 export class ImageMetadataManager {
   private static instance: ImageMetadataManager | undefined;
   private imageData: string | undefined;
@@ -152,10 +154,11 @@ export class ImageMetadataManager {
 
     const data = this.canvas?.toDataURL('image/jpeg');
     try {
-      this.saveDataToImage(data, JSON.stringify(metadata)).then((data) => {
-        downloadImage(data);
+      this.saveDataToImage(data, JSON.stringify(metadata)).then(() => {
+        toast('File Downloaded Successfully!', {
+          type: 'success'
+        });
       });
-
       return true;
     } catch (error) {
       console.log('error', error);
